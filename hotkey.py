@@ -5,30 +5,39 @@ import web
 from keys import HIDKeyboard
 from pygame.locals import *
 from ft5406 import Touchscreen, TS_PRESS, TS_RELEASE, TS_MOVE
-from threading import Thread
+from threading import Thread, Lock
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
-def set_backlight(value):
-    file_path = "/sys/class/backlight/backlight/brightness"
-    with open(file_path, "w") as f:
-        if value:
-            f.write("1")
-        else:
-            f.write("0")
+SCREEN_WIDTH = 720
+SCREEN_HEIGHT = 720
+CONFIG_FILE_PATH = 'config.json'
+config = None
+image_cache = {}
 
-def initialize_touchscreen(kb, grid, grid_size, square_size):
+class ConfigHandler(FileSystemEventHandler):
+    def __init__(self, callback, lock):
+        super().__init__()
+        self.callback = callback
+        self.lock = lock
+
+    def on_modified(self, event):
+        if event.src_path.endswith(CONFIG_FILE_PATH):
+            with self.lock:
+                pass
+
+        self.callback()
+
+def initialize_touchscreen(kb, config):
     ts = Touchscreen()
-    set_backlight(True)
 
     def touch_handler(event, touch):
+        layout = config['current_layout']
         if event == TS_PRESS:
             try:
-                x, y = touch.x, touch.y
-                grid_x = x // square_size
-                grid_y = y // square_size
-                if grid_y < len(grid) and grid_x < len(grid[grid_y]) and 'action' in grid[grid_y][grid_x].keys() and grid[grid_y][grid_x]['action']:
-                    kb.send_string(grid[grid_y][grid_x]['action'])
+                macro = find_button(layout['positions'], touch.x, touch.y)
+                if macro and macro in config['macros'].keys() and 'action' in config['macros'][macro].keys():  
+                    kb.send_string(config['macros'][macro]['action'])
 
             except Exception as e:
                 print(f'Error handling event: {e}')
@@ -48,56 +57,98 @@ def initialize_touchscreen(kb, grid, grid_size, square_size):
 
 def initialize_pygame():
     pygame.init()
-    width, height = 720, 720
-    size = (width, height)
+    size = (SCREEN_WIDTH, SCREEN_HEIGHT)
     screen = pygame.display.set_mode(size)
     pygame.mouse.set_visible(False)
     pygame.display.set_caption('hotkey')
     return screen
 
-def load_grid(grid_size, square_size, file_path):
-    grid = []
-    with open(file_path, 'r') as file:
-        data = json.load(file)
+def position_buttons():
+    for layout in config['layouts'].keys():
+        positions = []
+        for button in config['layouts'][layout]['buttons']:
+            x = 0
+            y = 0
+            macro = ''
+            if 'macro' in button.keys():
+                macro = button['macro']
+            size = button["size"]
+            button_width = 144 * size
+            button_height = 144 * size
 
-    for y in range(grid_size):
-        row = []
-        for x in range(grid_size):
-            if str(y) in data.keys() and str(x) in data[str(y)].keys():
-                row.append(data[str(y)][str(x)])
-            else:
-                row.append({'image': '', 'color': (255, 255, 255), 'name': '', 'action': ''})
-        grid.append(row)
-    return grid
+            while any((pos[1] <= x < pos[1] + pos[3]) and (pos[2] <= y < pos[2] + pos[4]) for pos in positions):
+                x += 144
+                if x + button_width > 720:
+                    x = 0
+                    y += 144
+                    if y + button_height > 720:
+                        raise ValueError("Not enough space for button", macro)
 
-def draw_grid(screen, grid, grid_size, square_size):
-    for y in range(grid_size):
-        for x in range(grid_size):
-            square = grid[y][x]
-            if 'image' in square:
-                image_path = os.path.join('./images/', square['image'])
+            positions.append((macro, x, y, button_width, button_height))
+
+            button['x'] = x
+            button['y'] = y
+            button['width'] = button_width
+            button['height'] = button_height
+
+            x += 144 * size
+            if x >= 720:
+                x = 0
+                y += 144 * size
+
+        config['layouts'][layout]['positions'] = positions
+
+def find_button(positions, x, y):
+    for macro, button_x, button_y, button_width, button_height in positions:
+        if x >= button_x and x < button_x + button_width and y >= button_y and y < button_y + button_height:
+            return macro
+    return None
+
+def draw_buttons(screen, layout):
+    for button in layout['buttons']:
+        if 'macro' in button.keys() and button['macro'] in config['macros']:
+            macro = config['macros'][button['macro']]
+            button_id = button["id"]
+            size = button["size"]
+            image_filename = macro['image']
+
+            if image_filename not in image_cache.keys():
+                image_path = os.path.abspath(os.path.join('./images/', os.path.basename(macro['image'])))
                 if os.path.exists(image_path) and os.path.isfile(image_path):
-                    image = pygame.image.load(image_path)
-                    image = pygame.transform.scale(image, (square_size, square_size))
-                    screen.blit(image, (x * square_size, y * square_size))
-            elif 'color' in square:
-                color = square['color']
-                pygame.draw.rect(screen, color, (x * square_size, y * square_size, square_size, square_size))
+                    image_cache[image_filename] = pygame.transform.scale(pygame.image.load(image_path), (144 * size, 144 * size)).convert_alpha()
+
+            if image_filename in image_cache.keys():
+                screen.blit(image_cache[image_filename], (button['x'], button['y']))
+
+def load_config():
+    global config
+    with open(CONFIG_FILE_PATH, 'r') as file:
+        config = json.load(file)
+
+    config['current_layout'] = config['layouts']['layout1']
+    position_buttons()
 
 def main():
-    grid_size = 5
-    square_size = 144
+    grid_size = 10
 
-    grid = load_grid(grid_size, square_size, 'config.json')
+    config_lock = Lock()
+    load_config()
 
     kb = HIDKeyboard()
-    ts = initialize_touchscreen(kb, grid, grid_size, square_size)
+    print('Keyboard Initialized')
+    ts = initialize_touchscreen(kb, config)
+    print('Touchscreen Initialized')
     screen = initialize_pygame()
+    print('Pygame Initialized')
     clock = pygame.time.Clock()
 
-    web_thread = Thread(target=web.init_web_interface)
-    web_thread.setDaemon(True)
-    web_thread.start()
+    web_handler = web.WebHandler(config_lock)
+    web_handler.setDaemon(True)
+    web_handler.start()
+
+    observer = Observer()
+    observer.schedule(ConfigHandler(load_config, config_lock), os.path.dirname(os.path.abspath(CONFIG_FILE_PATH)), recursive=False)
+    observer.start()
 
     try:
         running = True
@@ -107,7 +158,7 @@ def main():
                     running = False
 
             screen.fill((0, 0, 0))
-            draw_grid(screen, grid, grid_size, square_size)
+            draw_buttons(screen, config['current_layout'])
             pygame.display.flip()
 
             clock.tick(10)
@@ -118,10 +169,11 @@ def main():
         pass
 
     finally:
-        set_backlight(False)
         pygame.quit()
         ts.stop()
         kb.close()
+        observer.stop()
+        observer.join()
 
 if __name__ == '__main__':
     main()

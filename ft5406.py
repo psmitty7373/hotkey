@@ -195,15 +195,15 @@ class Touchscreen(object):
                 f.write("0")
 
     def poll(self):
-        #if time.time() - self.last_event > self.TIMEOUT:
-        #    self.set_backlight(False)
+        if self.backlight_on and time.time() - self.last_event > self.TIMEOUT:
+            self.set_backlight(False)
 
         self._get_pending_events()
 
         while not self._event_queue.empty():
-            #self.last_event = time.time()
-            #if self.backlight_on == False:
-            #    self.set_backlight(True)
+            self.last_event = time.time()
+            if self.backlight_on == False:
+                self.set_backlight(True)
 
             event = self._event_queue.get()
             self._event_queue.task_done()

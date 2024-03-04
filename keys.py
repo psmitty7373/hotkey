@@ -9,10 +9,10 @@ class HIDKeyboard:
         for key in keypresses:
             report = bytes([0, 0, key, 0, 0, 0, 0, 0])
             os.write(self.dev, report)
-            time.sleep(0.01)
+            time.sleep(0.02)
             report = bytes([0, 0, 0, 0, 0, 0, 0, 0])
             os.write(self.dev, report)
-            time.sleep(0.01)
+            time.sleep(0.02)
 
     def send_string(self, string):
         keypresses = self.string_to_keypresses(string)
@@ -20,11 +20,28 @@ class HIDKeyboard:
 
     def string_to_keypresses(self, s):
         keypresses = []
-        for char in s:
-            if char.isalpha():
+        i = 0
+        while i < len(s):
+            char = s[i]
+            if char == '\\':
+                if i + 1 < len(s):
+                    next_char = s[i + 1]
+                    if next_char == 'U':
+                        keypresses.append(0x52)  # Up arrow key
+                    elif next_char == 'D':
+                        keypresses.append(0x51)  # Down arrow key
+                    elif next_char == 'R':
+                        keypresses.append(0x4f)  # Right arrow key
+                    elif next_char == 'L':
+                        keypresses.append(0x50)  # Left arrow key
+                    i += 1  # Skip the next character
+                else:
+                    keypresses.append(self.key_map[char])
+            elif char.isalpha():
                 keypresses.append(self.key_map[char.lower()])
             elif char in self.key_map:
                 keypresses.append(self.key_map[char])
+            i += 1
         return keypresses
 
     def close(self):

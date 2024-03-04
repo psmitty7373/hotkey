@@ -1,53 +1,60 @@
 import os
-from flask import Flask, render_template, request, send_file, send_from_directory
+from flask import Flask, render_template, request, send_from_directory
 import json
+from threading import Thread
 
-app = Flask(__name__)
-app.config['TEMPLATES_AUTO_RELOAD'] = True
+class WebHandler(Thread):
+    def __init__(self, lock):
+        super().__init__()
+        self.app = Flask(__name__)
+        self.app.config['TEMPLATES_AUTO_RELOAD'] = True
+        self.lock = lock
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+        @self.app.route('/')
+        def index():
+            return render_template('index.html')
 
-@app.route('/config')
-def get_config():
-    with open('config.json', 'r') as file:
-        config = file.read()
-    return config
+        @self.app.route('/config')
+        def get_config():
+            with self.lock:
+                with open('config.json', 'r') as file:
+                    config = file.read()
+            return config
 
-@app.route('/update', methods=['POST'])
-def update():
-    try:
-        config = json.loads(request.form['config'])
-        with open('config.json', 'w') as file:
-            file.write(json.dumps(config))
-        return 'Config updated successfully.'
-    except:
-        return 'Config update failed.'
+        @self.app.route('/update', methods=['POST'])
+        def update():
+            try:
+                with self.lock:
+                    config = json.loads(request.form['config'])
+                    with open('config.json', 'w') as file:
+                        file.write(json.dumps(config))
+                return 'Config updated successfully.'
+            except:
+                return 'Config update failed.'
 
-@app.route('/upload', methods=['POST'])
-def upload_file():
-    if 'file' not in request.files:
-        return 'No file part'
-    
-    file = request.files['file']
-    
-    if file.filename == '':
-        return 'No selected file'
-    
-    if file and file.filename.endswith('.png'):
-        filename = os.path.join('images', file.filename)
-        file.save(filename)
-        return 'File uploaded successfully'
-    else:
-        return 'Only PNG files are allowed'
+        @self.app.route('/upload', methods=['POST'])
+        def upload_file():
+            if 'file' not in request.files:
+                return 'No file part'
 
-@app.route('/images/<path:path>')
-def send_images(path):
-    return send_from_directory('images', path)
+            file = request.files['file']
 
-def init_web_interface():
-    app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)
+            if file.filename == '':
+                return 'No selected file'
 
-if __name__ == '__main__':
-    init_web_interface()
+            if file.content_type != 'image/png':
+                return 'Only PNG files are allowed'
+
+            if len(file.read()) > 1 * 1024 * 1024:  # 1MB limit
+                return 'File size exceeds 1MB limit'
+
+            filename = safe_join('images', file.filename)
+            file.save(filename)
+            return 'File uploaded successfully'
+
+        @self.app.route('/images/<path:path>')
+        def send_images(path):
+            return send_from_directory('images', path)
+
+    def run(self):
+        self.app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)
