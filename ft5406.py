@@ -115,7 +115,7 @@ class Touchscreen(object):
     TOUCHSCREEN_EVDEV_NAME = 'EP0110M09'
     EVENT_FORMAT = str('llHHi')
     EVENT_SIZE = struct.calcsize(EVENT_FORMAT)
-    TIMEOUT = 10
+    TIMEOUT = 360
     last_event = 0
     backlight_on = False
 

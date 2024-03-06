@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, send_from_directory
+from flask import Flask, make_response, render_template, request, send_from_directory, safe_join
 import json
 from threading import Thread
 
@@ -40,7 +40,7 @@ class WebHandler(Thread):
             file = request.files['file']
 
             if file.filename == '':
-                return 'No selected file'
+                return 'No filename'
 
             if file.content_type != 'image/png':
                 return 'Only PNG files are allowed'
@@ -49,12 +49,19 @@ class WebHandler(Thread):
                 return 'File size exceeds 1MB limit'
 
             filename = safe_join('images', file.filename)
+            file.seek(0)
             file.save(filename)
             return 'File uploaded successfully'
 
         @self.app.route('/images/<path:path>')
         def send_images(path):
-            return send_from_directory('images', path)
+            response = make_response(send_from_directory('images', path))
+            response.headers['Cache-Control'] = 'no-store'
+            return response
+
+        @self.app.route('/default_images/<path:path>')
+        def send_default_images(path):
+            return send_from_directory('default_images', path)
 
     def run(self):
         self.app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)
