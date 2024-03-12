@@ -6,6 +6,8 @@ import pygame
 import web
 from keys import HIDKeyboard
 from pygame.locals import *
+from jsonschema import validate, ValidationError
+from config_schema import config_schema
 from ft5406 import Touchscreen, TS_PRESS, TS_RELEASE, TS_MOVE
 from threading import Thread, Lock
 from watchdog.observers import Observer
@@ -105,7 +107,6 @@ def position_buttons():
             if x >= 720:
                 x = 0
                 y += 144 * size
-
         g['config']['layouts'][layout]['positions'] = positions
 
 def find_button(positions, x, y):
@@ -115,27 +116,36 @@ def find_button(positions, x, y):
     return None
 
 def draw_buttons(screen, layout):
-    for button in layout['buttons']:
-        if 'macro' in button.keys() and button['macro'] in g['config']['macros']:
-            macro = g['config']['macros'][button['macro']]
-            button_id = button["id"]
-            size = size_map[button["size"]]
-            image_filename = macro['image']
+    try:
+        for button in layout['buttons']:
+            if 'macro' in button.keys() and button['macro'] in g['config']['macros']:
+                macro = g['config']['macros'][button['macro']]
+                size = size_map[button["size"]]
+                image_filename = macro['image']
 
-            if image_filename not in image_cache.keys():
-                image_path = os.path.abspath(os.path.join('./images/', os.path.basename(macro['image'])))
-                image_cache[image_filename] = [None]*3
-                if os.path.exists(image_path) and os.path.isfile(image_path):
-                    for i in range(0,3):
-                        image_cache[image_filename][i] = pygame.transform.scale(pygame.image.load(image_path), (144 * i, 144 * i)).convert_alpha()
+                if image_filename not in image_cache.keys():
+                    image_path = os.path.abspath(os.path.join('./images/', os.path.basename(macro['image'])))
+                    image_cache[image_filename] = [None]*3
+                    if os.path.exists(image_path) and os.path.isfile(image_path):
+                        for i in range(1,4):
+                            image_cache[image_filename][i-1] = pygame.transform.scale(pygame.image.load(image_path), (144 * i, 144 * i)).convert_alpha()
 
-            if image_filename in image_cache.keys():
-                screen.blit(image_cache[image_filename][size], (button['x'], button['y']))
+                if image_filename in image_cache.keys():
+                    screen.blit(image_cache[image_filename][size - 1], (button['x'], button['y']))
+    except Exception as e:
+        print(f'Error: {e}')
+        return
 
 def load_config():
     global g
-    with open(CONFIG_FILE_PATH, 'r') as file:
-        g['config'] = json.load(file)
+    try:
+        with open(CONFIG_FILE_PATH, 'r') as file:
+            g['config'] = json.load(file)
+
+        validate(instance=g['config'], schema=config_schema)
+    except Exception as e:
+        print(f'Error opening config: {e}')
+        return False
 
     if 'current_layout' in g['config'].keys():
         g['current_layout'] = g['config']['layouts'][g['config']['current_layout']]
@@ -144,11 +154,14 @@ def load_config():
 
     position_buttons()
 
+    return True
+
 def main():
     grid_size = 10
-
     config_lock = Lock()
-    load_config()
+
+    if load_config() == False:
+        sys.exit(1)
 
     kb = HIDKeyboard()
     print('Keyboard Initialized')

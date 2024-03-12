@@ -1,6 +1,7 @@
-import os
+import json, os
 from flask import Flask, make_response, render_template, request, send_from_directory, safe_join
-import json
+from jsonschema import validate, ValidationError
+from config_schema import config_schema
 from threading import Thread
 
 class WebHandler(Thread):
@@ -26,6 +27,8 @@ class WebHandler(Thread):
             try:
                 with self.lock:
                     config = json.loads(request.form['config'])
+                    validate(instance=config, schema=config_schema)
+                    
                     with open('config.json', 'w') as file:
                         file.write(json.dumps(config))
                 return 'Config updated successfully.'

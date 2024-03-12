@@ -63,6 +63,15 @@
             background-color: #888;
         }
 
+        .grid-container {
+            margin: auto auto;
+            padding: 10px;
+            background-color: #333;
+            border: 1px solid #444;
+            border-radius: 5px;
+            position: relative;
+        }
+
         .grid {
             display: grid;
             grid-template-columns: repeat(10, 1fr);
@@ -70,11 +79,7 @@
             justify-content: center;
             width: 720px;
             height: 720px;
-            margin: 20px auto;
-            padding: 10px;
             background-color: #333;
-            border: 1px solid #444;
-            border-radius: 5px;
             grid-auto-flow: dense;
             position: relative;
         }
@@ -278,7 +283,9 @@
             </div>
         </div>
     </div>
-    <div class="grid" id="grid"></div>
+    <div class="grid-container">
+        <div class="grid" id="grid"></div>
+    </div>
     <div class="trashcan" id="trashcan"><img src="default_images/trashcan.png" width=50 style="pointer-events: none;"></div>
     <div class="sidebar" id="macrobar"></div>
     <div class="dragged-preview" style="display: none;"></div>
@@ -289,6 +296,7 @@
         let config = {};
         let changeTimer;
         let draggedItem = null;
+        let layoutChanged = false;
         let tempButton = null;
         let current_layout = null;
 
@@ -330,45 +338,56 @@
 
         document.addEventListener("drop", function(event) {
             event.preventDefault();
-            // dropping on macro
+
+            // dropping macro on button
             if (draggedItem && draggedItem.classList.contains("macro") && event.target.classList.contains("grid-button")) {
                 const target = event.target;
-                const button_id = target.getAttribute('data-id');
                 const button_img = target.querySelector('.grid-button-image');
                 const button_name = target.querySelector('.grid-button-name');
                 const macro_img = draggedItem.querySelector('.macro-image');
                 const macro_name = draggedItem.getAttribute('data-macro-name');
                 button_img.src = macro_img.src;
                 button_name.innerHTML = macro_name;
-
-                const layout = current_layout;
-                const button = getButtonById(button_id);
-                button.macro = macro_name;
-
-                saveConfig();
+                current_layout.buttons[Array.from(grid.children).indexOf(event.target)].macro = macro_name;
+                layoutChanged = true;
+                event.target.classList.remove('hover');
             // dropping button on button
-            } else if (draggedItem && draggedItem.classList.contains("grid-button") && event.target.classList.contains("grid-button")) {
-                //updateLayout()
-                //saveConfig();
-            // dropping on trashcan
             } else if (draggedItem && event.target.classList.contains("trashcan")) {
-                // dropping grid button
+                // dropping grid button on trashcan
                 if (draggedItem.classList.contains("grid-button")) {
-                    const button_id = draggedItem.getAttribute('data-id');
-                    const button = getButtonById(button_id);
+                    const button_img = draggedItem.querySelector('.grid-button-image');
+                    const button_name = draggedItem.querySelector('.grid-button-name');
+                    const button = current_layout.buttons[Array.from(grid.children).indexOf(draggedItem)];
                     if (button) {
-                        delete button['macro'];
-                        saveConfig();
-                        loadGrid();
+                        if (button['macro']) {
+                            delete button['macro'];
+                            layoutChanged = true;
+                        } else {
+                            draggedItem.parentElement.removeChild(draggedItem);
+                            updateLayout();
+                            layoutChanged = true;
+                        }
                     }
-                // dropping a macro
+                // dropping a macro on trashcan
                 } else if (draggedItem.classList.contains("macro")) {
                     const macro_name = draggedItem.getAttribute('data-macro-name');
                     if (Object.keys(config.macros).includes(macro_name)) {
                         delete config.macros[macro_name];
-                        saveConfig();
-                        loadGrid();
                         draggedItem.remove();
+                        layoutChanged = true;
+                    }
+                } else if (draggedItem.classList.contains("layout")) {
+                    const layout_name = draggedItem.getAttribute('data-layout-name');
+                    if (Object.keys(config.layouts).includes(layout_name)) {
+                        delete config.layouts[layout_name];
+                        draggedItem.remove();
+                        if (config.current_layout == layout_name) {
+                            if (Object.keys(config.layouts).length > 0) {
+                                changeLayout(Object.keys(config.layouts)[0]);
+                            } else {
+                                config.current_layout = '';
+                            }
+                        }
                     }
                 }
                 event.target.classList.remove('hover-danger');
@@ -379,7 +398,6 @@
                     if (file && file.type === 'image/png') {
                         const macro_image = document.getElementById('new-macro-image');
                         const image_url = URL.createObjectURL(file);
-                        console.log(image_url);
                         if (image_url) {
                             macro_image.src = image_url;
                             document.getElementById('new-macro-filename').innerText = file.name;
@@ -389,6 +407,12 @@
                     handleFileDrop(event);
                 }
             }
+
+            if (layoutChanged) {
+                layoutChanged = false;
+                saveConfig();
+                loadGrid();
+            }
         });
 
         document.addEventListener('dragover', function(event) {
@@ -396,8 +420,8 @@
             const count = checkGridCapacity();
             // dragging button over the grid
             if (draggedItem && (draggedItem.classList.contains("grid-button-template") || draggedItem.classList.contains("grid-button"))) {//} && event.target.classList.contains("grid-button")) {
-                const target = event.target.closest('.grid-button');
-                if (target) {
+                const target = event.target;
+                if (target.classList.contains('grid-button')) {
                     if (draggedItem.classList.contains("grid-button-template") || draggedItem.classList.contains('grid-button')) {
                         const rect = target.getBoundingClientRect();
                         const isAfter = event.clientX > rect.left + rect.width / 2;
@@ -405,11 +429,13 @@
                         const children = Array.from(grid.children);
                         const currentIndex = children.indexOf(draggedItem);
                         const targetIndex = children.indexOf(target);
-
-                        if (isAfter && currentIndex < targetIndex && draggedItem.offsetHeight + target.offsetTop < grid.offsetHeight) {
+                        if (isAfter && currentIndex < targetIndex) {
                             target.parentNode.insertBefore(draggedItem, target.nextElementSibling);
                             if (!checkGridCapacity()) {
-                                target.parentNode.removeChild(draggedItem);
+                                insertChildAtIndex(target.parentNode, draggedItem, currentIndex);
+                            } else {
+                                updateLayout();
+                                layoutChanged = true;
                             }
                         } else if (!isAfter && currentIndex > targetIndex) {
                             const target_size = target.getAttribute('data-size');
@@ -417,7 +443,10 @@
                             if (dragged_size >= target_size || isAbove) {
                                 target.parentNode.insertBefore(draggedItem, target);
                                 if (!checkGridCapacity()) {
-                                   target.parentNode.removeChild(draggedItem);
+                                    insertChildAtIndex(target.parentNode, draggedItem, currentIndex);
+                                } else {
+                                    updateLayout();
+                                    layoutChanged = true;
                                 }
                             }
                         }
@@ -427,10 +456,36 @@
                     event.target.appendChild(draggedItem);
                     if (!checkGridCapacity()) {
                         event.target.removeChild(draggedItem);
+                    } else {
+                        updateLayout();
+                        layoutChanged = true;
                     }
                 }
             }
         });
+
+        function insertChildAtIndex(parentElement, newChild, index) {
+            const children = parentElement.children;
+            if (index < 0 || index > children.length) {
+                parentElement.removeChild(newChild);
+                return;
+            }
+
+            const referenceChild = children[index] || null;
+            parentElement.insertBefore(newChild, referenceChild);
+        }
+
+        function clearDefaultText(element) {
+            if (element.textContent === element.getAttribute('data-default-text')) {
+                element.textContent = '';
+            }
+        }
+
+        function restoreDefaultText(element) {
+            if (element.textContent.trim() === '') {
+                element.textContent = element.getAttribute('data-default-text');
+            }
+        }
 
         function updateLayout() {
             const children = grid.children;
@@ -438,7 +493,6 @@
             current_layout.buttons = [];
             for (let i = 0; i < children.length; i++) {
                 const new_button = {};
-                new_button.id = children[i].getAttribute('data-id');
                 new_button.size = parseInt(children[i].getAttribute('data-size'));
                 if (children[i].getAttribute('data-macro')) {
                     new_button.macro = children[i].getAttribute('data-macro');
@@ -489,17 +543,7 @@
             });
         }
 
-        function getButtonById(id) {
-            const layout = current_layout;
-            for (let i = 0; i < layout.buttons.length; i++) {
-                if (layout.buttons[i].id == id) {
-                    return layout.buttons[i];
-                }
-            }
-            return null;
-        }
-
-        function saveConfig() {
+        function saveConfig(callback) {
             const formData = new FormData();
             formData.append('config', JSON.stringify(config));
             fetch('/update', {
@@ -508,6 +552,9 @@
             })
             .then(response => {
                 if (response.ok) {
+                    if (callback) {
+                        callback();
+                    }
                 } else {
                     alert('Failed to update config.');
                 }
@@ -521,7 +568,6 @@
 
             div.className = `grid-button size-${button.size}`;
             div.draggable = true;
-            div.setAttribute('data-id', button.id);
             div.setAttribute('data-size', button.size);
 
             img.className = 'grid-button-image';
@@ -562,7 +608,7 @@
             div.id = "new-macro";
             div.innerHTML = `
                 <div class="macro-info">
-                    <div id="new-macro-name" class="macro-name" name="macro-name" contentEditable=true>New Macro</div>
+                    <div id="new-macro-name" class="macro-name" name="macro-name" onfocus="clearDefaultText(this)" onblur="restoreDefaultText(this)" data-default-text="New Macro" contentEditable=true>New Macro</div>
                     <textarea id="new-macro-action" class="macro-action" name="macro-action" rows="2" cols="25">New Action</textarea>
                     <span id="new-macro-filename" style="display:none;"></span>
                 </div>
@@ -602,7 +648,6 @@
                         const canvas = document.createElement('canvas');
                         canvas.width = new_macro_image.naturalWidth;
                         canvas.height = new_macro_image.naturalHeight;
-                        console.log(canvas.width, canvas.height);
 
                         // Draw the image onto the canvas
                         const ctx = canvas.getContext('2d');
@@ -638,7 +683,7 @@
                             'image': 'default.png'
                         }
                         saveConfig();
-                        loadMacros();
+                        loadLayouts();
                     }
                 }
             }
@@ -647,16 +692,18 @@
         function loadLayouts() {
             const layouts = config.layouts;
             const layoutbar = document.getElementById('layoutbar');
+            layoutbar.innerHTML = '';
             const div = document.createElement('div');
-            div.className = 'macro';
+            div.className = 'layout';
             div.style = "background-color:#555;";
-            div.id = "new-macro";
-            div.innerHTML = `<div id="new-layout-name" class="layout-name" name="layout-name" contentEditable="true">New Layout</div>
+            div.id = "new-layout";
+            div.innerHTML = `<div id="new-layout-name" class="layout-name" name="layout-name" onfocus="clearDefaultText(this)" onblur="restoreDefaultText(this)" data-default-text="New Layout" contentEditable="true" style="cursor: text">New Layout</div>
                 <button class="button" type="button" onclick="newLayout()">Save</button>`;
             layoutbar.appendChild(div);
             for (const [key, value] of Object.entries(layouts)) {
                 const div = document.createElement('div');
-                div.className = 'layout';
+                div.className = 'layout draggable';
+                div.draggable = true;
                 div.innerHTML = `
                     <div class="layout-name" name="layout-name" data-layout-name="${key}" onclick="changeLayout('${key}')">${key}</div>
                 `;
@@ -665,19 +712,30 @@
             }
         }
 
+        function newLayout() {
+            const new_layout_name = document.getElementById('new-layout-name').innerHTML;
+            if (Object.keys(config.layouts).includes(new_layout_name)) {
+                alert("Error, name in use.");
+            } else {
+                if (new_layout_name) {
+                    config.layouts[new_layout_name] = {'buttons': []};
+                    saveConfig();
+                    loadLayouts();
+                }
+            }
+        }
+
         function changeLayout(layout) {
             if (config.layouts[layout] && config.current_layout != layout) {
                 config.current_layout = layout;
                 current_layout = config.layouts[layout];
                 saveConfig();
-                console.log('layout');
                 loadGrid();
             }
         }
 
         function handleFileDrop(event) {
             event.preventDefault();
-            //event.target.classList.remove('hover');
             const macro_name = event.target.getAttribute('data-macro-name');
             if (!macro_name) {
                 return;
