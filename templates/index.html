@@ -376,14 +376,18 @@
                         draggedItem.remove();
                         layoutChanged = true;
                     }
+                // dropping a layout on trashcan
                 } else if (draggedItem.classList.contains("layout")) {
                     const layout_name = draggedItem.getAttribute('data-layout-name');
                     if (Object.keys(config.layouts).includes(layout_name)) {
                         delete config.layouts[layout_name];
                         draggedItem.remove();
+                        layoutChanged = true;
                         if (config.current_layout == layout_name) {
                             if (Object.keys(config.layouts).length > 0) {
                                 changeLayout(Object.keys(config.layouts)[0]);
+                                // don't need to double update layout
+                                layoutChanged = false;;
                             } else {
                                 config.current_layout = '';
                             }
