@@ -4,6 +4,8 @@
 
 This project is a desktop style macro board that is configured via a web interface. The device uses a Raspberry Pi Zero operating as a HID gadget to transmit keypresses to the host system.  It incorporates a LCD touchscreen to provide the interface with the user.
 
+This makes a super handy macro board for games like Helldivers 2!!
+
 ## Assembly
 After printing the chassis, assembly is fairly straight forward.  The screen is pressure fitted into the lid and will only fit in one direction.
 
@@ -58,3 +60,7 @@ Included is an STL file for printing the macro-box case.  The case can be printe
 ![alt text](./printable_case/case_screenshot.png)
 
 Files for the case can be found in the "printable_case" directory.
+
+## Credits
+
+Example icons from: https://www.reddit.com/r/Helldivers/comments/1ayhofq/hell_divers_2_stratagems_icons_for_streamdeck/
