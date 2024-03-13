@@ -64,3 +64,5 @@ Files for the case can be found in the "printable_case" directory.
 ## Credits
 
 Example icons from: https://www.reddit.com/r/Helldivers/comments/1ayhofq/hell_divers_2_stratagems_icons_for_streamdeck/
+
+Touchscreen driver from: https://github.com/pimoroni/python-multitouch/blob/master/library/ft5406.py

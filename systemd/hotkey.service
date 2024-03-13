@@ -1,0 +1,9 @@
+[Unit]
+Description=Start Hotkey
+
+[Service]
+Type=oneshot
+ExecStart=/opt/hid.sh
+
+[Install]
+WantedBy=multi-user.target
