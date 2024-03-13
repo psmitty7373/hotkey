@@ -5,6 +5,25 @@
 This project is a desktop style macro board that is configured via a web interface. The device uses a Raspberry Pi Zero operating as a HID gadget to transmit keypresses to the host system.  It incorporates a LCD touchscreen to provide the interface with the user.
 
 ## Assembly
+After printing the chassis, assembly is fairly straight forward.  The screen is pressure fitted into the lid and will only fit in one direction.
+
+![screen placement](./help_images/screen.png)
+
+The screen is secured using 2 of the included metal screws and 2 short nylon standoffs commonly found in makerspaces, Microcenter, etc.
+
+Once the screen is secured, the Pi Zero is socketed into the 40-pin connector and secured using 2 nylon screws.
+
+![screws](./help_images/screws.png)
+
+A micro-sd cable is routed through the hole in the back of the chassis and connected to the OTG port on the Pi Zero.
+
+![cable placement](./help_images/cable.png)
+
+Snap the combined chassis front, screen, Pi, and cable to the rear of the chassis.  The fit should be comfortable depending on your print settings.  Insert the SD card into the cutout in the side of the case, taking care to ensure it is inserted properly.
+
+![sdcard](./help_images/sdcard.png)
+
+I recommend then using small rubber feet on the bottom of the chassis to prevent it from sliding around.
 
 ## Setup
 The preferred starting distro is <> image of Debian.  Once logged in via SSH, clone this repository using git.
@@ -14,7 +33,7 @@ The preferred starting distro is <> image of Debian.  Once logged in via SSH, cl
 
 Layouts and macros are created via a webserver listening on the Raspberry Pi.  The design uses a simplistic drag-and-drop interface for most features.
 
-![alt text](./help_images/web_layout.png)
+![example web layout](./help_images/web_layout.png)
 
 ### Layouts
 
