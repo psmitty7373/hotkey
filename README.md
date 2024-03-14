@@ -66,6 +66,8 @@ cd hotkey
 sudo ./install.sh
 ```
 
+After install, all files will be located in /opt/hotkey and managed by user "hotkey".
+
 ### Accessing the UI
 After rebooting, the Pi will attempt to start both a HID and Ethernet OTG device with your host OS.  You can still access the Pi via your wireless connection too.  The web interface will listen on port 5000.  Just browse to http://pi-ip-address:5000 to get started setting up your macros.  
 
