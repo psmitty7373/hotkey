@@ -26,7 +26,9 @@ class HIDKeyboard:
             if char == '\\':
                 if i + 1 < len(s):
                     next_char = s[i + 1]
-                    if next_char == 'U':
+                    if next_char == '\\':
+                        keypresses.append(0x31)
+                    elif next_char == 'U':
                         keypresses.append(0x52)  # Up arrow key
                     elif next_char == 'D':
                         keypresses.append(0x51)  # Down arrow key
@@ -34,6 +36,8 @@ class HIDKeyboard:
                         keypresses.append(0x4f)  # Right arrow key
                     elif next_char == 'L':
                         keypresses.append(0x50)  # Left arrow key
+                    elif next_char == 'r' or next_char == 'n':
+                        keypresses.append(0x28)
                     i += 1  # Skip the next character
                 else:
                     keypresses.append(self.key_map[char])
@@ -42,6 +46,7 @@ class HIDKeyboard:
             elif char in self.key_map:
                 keypresses.append(self.key_map[char])
             i += 1
+
         return keypresses
 
     def close(self):

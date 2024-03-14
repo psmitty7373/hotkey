@@ -1,0 +1,13 @@
+[Unit]
+Description=Gunicorn Service
+After=network.target hid.service
+
+[Service]
+Type=simple
+User=hotkey
+WorkingDirectory=/opt/hotkey
+ExecStart=/usr/bin/gunicorn 'app:flask_app' -b 0.0.0.0:5000
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

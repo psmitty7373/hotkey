@@ -6,7 +6,7 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 apt update
-apt install python3-pip python3-pygame python3-flask python3-watchdog python3-jsonschema
+apt install gunicorn python3-pip python3-pygame python3-flask python3-gunicorn python3-watchdog python3-jsonschema
 
 if ! $(grep -q dtoverlay=vc4-kms-dpi-hyperpixel4sq /boot/config.txt) ; then
     echo "dtoverlay=vc4-kms-dpi-hyperpixel4sq" >> /boot/config.txt
@@ -38,7 +38,9 @@ udevadm trigger
 
 cp /opt/hotkey/systemd/hid.service /etc/systemd/system/
 cp /opt/hotkey/systemd/hotkey.service /etc/systemd/system/
+cp /opt/hotkey/systemd/gunicorn.service /etc/systemd/system/
 
 systemctl daemon-reload
 systemctl enable hid.service
+systemctl enable gunicorn.service
 systemctl enable hotkey.service

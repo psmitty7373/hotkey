@@ -14,8 +14,9 @@ cd /sys/kernel/config/usb_gadget/g
 # Add basic information
 echo "0x3066" > bcdDevice
 echo "0x0200" > bcdUSB
-echo "0x02" > bDeviceClass
-echo "0x00" > bDeviceSubClass
+echo "0xef" > bDeviceClass
+echo "0x01" > bDeviceProtocol
+echo "0x02" > bDeviceSubClass
 echo 0x0104 > idProduct
 echo 0x1d6b > idVendor
 
@@ -60,4 +61,5 @@ ln -s configs/c.1 os_desc
 
 udevadm settle -t 5 || :
 ls /sys/class/udc/ > UDC
+
 exit 0
