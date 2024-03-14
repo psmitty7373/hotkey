@@ -1,0 +1,1 @@
+SUBSYSTEM=="hidg", KERNEL=="hidg0", MODE="0660", GROUP="plugdev"

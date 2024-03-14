@@ -59,3 +59,4 @@ ln -s configs/c.1 os_desc
 
 udevadm settle -t 5 || :
 ls /sys/class/udc/ > UDC
+exit 0

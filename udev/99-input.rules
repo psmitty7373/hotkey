@@ -1,0 +1,1 @@
+KERNEL=="event1", MODE="0660", GROUP="input"

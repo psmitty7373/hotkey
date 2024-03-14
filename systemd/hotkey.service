@@ -1,9 +1,13 @@
 [Unit]
-Description=Start Hotkey
+Description=Hotkey Service
+After=network.target hid.service
 
 [Service]
-Type=oneshot
-ExecStart=/opt/hid.sh
+Type=simple
+User=hotkey
+WorkingDirectory=/opt/hotkey
+ExecStart=/usr/bin/openvt -s -v -e -f -w /usr/bin/python3 /opt/hotkey/hotkey.py
+Restart=always
 
 [Install]
 WantedBy=multi-user.target

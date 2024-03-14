@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 
-import os
-import json
-import pygame
-import web
+import os, json, pygame, sys, syslog, web
 from keys import HIDKeyboard
 from pygame.locals import *
 from jsonschema import validate, ValidationError
@@ -24,6 +21,9 @@ size_map = {
     4: 2,
     1: 1
 }
+
+os.putenv('SDL_VIDEODRIVER', 'fbcon')
+os.putenv('SDL_FBDEV', '/dev/fb0')
 
 class ConfigHandler(FileSystemEventHandler):
     def __init__(self, callback, lock):
@@ -50,7 +50,7 @@ def initialize_touchscreen(kb, g):
                     kb.send_string(g['config']['macros'][macro]['action'])
 
             except Exception as e:
-                print(f'Error handling event: {e}')
+                syslog.syslog(syslog.LOG_INFO, f'Error handling event: {e}')
 
         if event == TS_RELEASE:
             pass
@@ -133,7 +133,7 @@ def draw_buttons(screen, layout):
                 if image_filename in image_cache.keys():
                     screen.blit(image_cache[image_filename][size - 1], (button['x'], button['y']))
     except Exception as e:
-        print(f'Error: {e}')
+        syslog.syslog(syslog.LOG_INFO, f'Error: {e}')
         return
 
 def load_config():
@@ -144,7 +144,7 @@ def load_config():
 
         validate(instance=g['config'], schema=config_schema)
     except Exception as e:
-        print(f'Error opening config: {e}')
+        syslog.syslog(syslog.LOG_INFO, f'Error opening config: {e}')
         return False
 
     if 'current_layout' in g['config'].keys():
@@ -164,11 +164,11 @@ def main():
         sys.exit(1)
 
     kb = HIDKeyboard()
-    print('Keyboard Initialized')
+    syslog.syslog(syslog.LOG_INFO, 'Keyboard Initialized')
     ts = initialize_touchscreen(kb, g)
-    print('Touchscreen Initialized')
+    syslog.syslog(syslog.LOG_INFO, 'Touchscreen Initialized')
     screen = initialize_pygame()
-    print('Pygame Initialized')
+    syslog.syslog(syslog.LOG_INFO, 'Pygame Initialized')
     clock = pygame.time.Clock()
 
     web_handler = web.WebHandler(config_lock)
@@ -185,6 +185,7 @@ def main():
             for event in pygame.event.get():
                 if event.type == QUIT:
                     running = False
+                    break
 
             screen.fill((0, 0, 0))
             draw_buttons(screen, g['current_layout'])
@@ -194,7 +195,7 @@ def main():
         
 
     except KeyboardInterrupt:
-        print('Quitting');
+        syslog.syslog(syslog.LOG_INFO, 'Quitting');
         pass
 
     finally:
