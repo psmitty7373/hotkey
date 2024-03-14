@@ -1,6 +1,8 @@
 import os
 import time
 
+KEYDELAY = 0.02
+
 class HIDKeyboard:
     def __init__(self, device_path="/dev/hidg0"):
         self.dev = os.open(device_path, os.O_RDWR)
@@ -9,10 +11,10 @@ class HIDKeyboard:
         for key in keypresses:
             report = bytes([0, 0, key, 0, 0, 0, 0, 0])
             os.write(self.dev, report)
-            time.sleep(0.02)
+            time.sleep(KEYDELAY)
             report = bytes([0, 0, 0, 0, 0, 0, 0, 0])
             os.write(self.dev, report)
-            time.sleep(0.02)
+            time.sleep(KEYDELAY)
 
     def send_string(self, string):
         keypresses = self.string_to_keypresses(string)

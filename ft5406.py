@@ -92,12 +92,12 @@ class Touch(object):
         self.last_y = self._y
         self._y = value
 
-    def handle_events(self):
+    def handle_events(self, ignore):
         """Run outstanding press/release/move events"""
         for event in self.events:
             if event == TS_MOVE and callable(self.on_move):
                 self.on_move(event, self)
-            if event == TS_PRESS and callable(self.on_press):
+            if event == TS_PRESS and callable(self.on_press) and not ignore:
                 self.on_press(event, self)
             if event == TS_RELEASE and callable(self.on_release):
                 self.on_release(event, self)
@@ -115,7 +115,7 @@ class Touchscreen(object):
     TOUCHSCREEN_EVDEV_NAME = 'EP0110M09'
     EVENT_FORMAT = str('llHHi')
     EVENT_SIZE = struct.calcsize(EVENT_FORMAT)
-    TIMEOUT = 360
+    TIMEOUT = 600
     last_event = 0
     backlight_on = False
 
@@ -137,7 +137,6 @@ class Touchscreen(object):
         self._running = True
         while self._running:
             self.poll()
-            #time.sleep(0.0001)
 
     def run(self):
         if self._thread is not None:
@@ -195,6 +194,8 @@ class Touchscreen(object):
                 f.write("0")
 
     def poll(self):
+        ignore = False
+
         if self.backlight_on and time.time() - self.last_event > self.TIMEOUT:
             self.set_backlight(False)
 
@@ -204,13 +205,14 @@ class Touchscreen(object):
             self.last_event = time.time()
             if self.backlight_on == False:
                 self.set_backlight(True)
+                ignore = True
 
             event = self._event_queue.get()
             self._event_queue.task_done()
 
             if event.type == EV_SYN: # Sync
                 for touch in self.touches:
-                    touch.handle_events()
+                    touch.handle_events(ignore)
                 return self.touches
                 
             if event.type == EV_ABS: # Absolute cursor position

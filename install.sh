@@ -44,3 +44,5 @@ systemctl daemon-reload
 systemctl enable hid.service
 systemctl enable gunicorn.service
 systemctl enable hotkey.service
+
+#reboot
