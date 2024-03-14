@@ -25,7 +25,7 @@ if ! id "hotkey" &>/dev/null; then
 fi
 
 mkdir /opt/hotkey
-cp -r * /opt/hotkey
+cp -r * /opt/hotkey/
 chown -R hotkey:hotkey /opt/hotkey
 chown -R root:root /opt/hotkey/hid.sh
 
