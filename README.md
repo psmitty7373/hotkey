@@ -18,8 +18,8 @@ An [STL file](./printable_case/printable_case.stl) is included for printing the 
 ![Case Design](./printable_case/case_screenshot.png)
 
 Files for the case can be found in the "printable_case" directory.
-## Assembly
 
+## Hardware Setup
 After printing the case, assembly is straightforward:
 
 1. **Screen Placement**: The screen is pressure-fitted into the lid and will only fit in one direction.
@@ -38,17 +38,23 @@ After printing the case, assembly is straightforward:
 
 5. **Final Assembly**: Snap the front of the case, screen, Pi, and cable onto the rear of the case. The fit should be snug depending on your print settings.
 
-6. **SD Card Insertion**: Insert the SD card into the cutout in the side of the case, ensuring it is inserted correctly.
+6. **SD Card Insertion**: Insert the SD card into the cutout in the side of the case, ensuring it is inserted correctly.  See software setup below for recommendations on where to start with imaging your SD card.
 
    ![sdcard](./help_images/sdcard.png)
 
 7. **Stabilization**: Optionally, add small rubber feet to the bottom of the case to prevent it from sliding around.
 
-## Setup
+## Software Setup
 
-The recommended starting distro is a Debian image. Once logged in via SSH, clone this repository using git.
+The recommended starting distro is a Debian image. Make sure to use the lite variant without a GUI.  This program will write directly to the framebuffer and not use a windowing system like X.  Using the Raspberry Pi imager, the appropriate distro can be found by selecting "Raspberry Pi OS (other)" -> "Raspberry Pi OS (Legacy, 32-bit) Lite". 
 
-## User Interface
+![pi os](./help_images/pi_image.png)
+
+Make sure to pre-configure any wireless settings necessary to access your pi.
+
+Next you will need to find your Pi on your wifi and login via SSH or directly through the HDMI and USB, then clone this repository using git.
+
+### User Interface
 
 Layouts and macros are created via a web server listening on the Raspberry Pi. The design uses a simplistic drag-and-drop interface for most features.
 

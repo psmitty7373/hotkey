@@ -27,6 +27,7 @@ fi
 mkdir /opt/hotkey
 cp -r * /opt/hotkey
 chown -R hotkey:hotkey /opt/hotkey
+chown -R root:root /opt/hotkey/hid.sh
 
 cp /opt/hotkey/udev/99-hidg0.rules /etc/udev/rules.d
 cp /opt/hotkey/udev/99-input.rules /etc/udev/rules.d
