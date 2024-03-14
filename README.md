@@ -1,68 +1,72 @@
 # hotkey
 
-##  About
+## About
 
-This project is a desktop style macro board that is configured via a web interface. The device uses a Raspberry Pi Zero operating as a HID gadget to transmit keypresses to the host system.  It incorporates a LCD touchscreen to provide the interface with the user.
+This project is a desktop-style macro board configured via a web interface. It uses a Raspberry Pi Zero operating as a HID gadget to transmit keypresses to the host system and incorporates an LCD touchscreen for user interaction. This device is ideal for games like Helldivers 2!
 
-This makes a super handy macro board for games like Helldivers 2!!
+## Requirements
+- 3d printed case
+- Raspberry Pi Zero 2 W
+- Pimorono HyperPixel 4.0 Square Touchscreen
+- Some nylon screws and standoffs
+- 8gb SD card
+- Micro USB cable
 
+## Case Printing
+An [STL file](./printable_case/printable_case.stl) is included for printing the case. The case can be printed without supports and snaps together.
+
+![Case Design](./printable_case/case_screenshot.png)
+
+Files for the case can be found in the "printable_case" directory.
 ## Assembly
-After printing the chassis, assembly is fairly straight forward.  The screen is pressure fitted into the lid and will only fit in one direction.
 
-![screen placement](./help_images/screen.png)
+After printing the case, assembly is straightforward:
 
-The screen is secured using 2 of the included metal screws and 2 short nylon standoffs commonly found in makerspaces, Microcenter, etc.
+1. **Screen Placement**: The screen is pressure-fitted into the lid and will only fit in one direction.
 
-Once the screen is secured, the Pi Zero is socketed into the 40-pin connector and secured using 2 nylon screws.
+   ![screen placement](./help_images/screen.png)
 
-![screws](./help_images/screws.png)
+2. **Securing the Screen**: The screen is secured using 2 metal screws and 2 short nylon standoffs commonly found in makerspaces or Microcenter.
 
-A micro-sd cable is routed through the hole in the back of the chassis and connected to the OTG port on the Pi Zero.
+   ![screws](./help_images/screws.png)
 
-![cable placement](./help_images/cable.png)
+3. **Connecting the Pi Zero**: The Pi Zero is socketed into the 40-pin connector and secured using 2 nylon screws.
 
-Snap the combined chassis front, screen, Pi, and cable to the rear of the chassis.  The fit should be comfortable depending on your print settings.  Insert the SD card into the cutout in the side of the case, taking care to ensure it is inserted properly.
+4. **Cable Routing**: A micro-USB cable is routed through the hole in the back of the case and connected to the OTG port on the Pi Zero.
 
-![sdcard](./help_images/sdcard.png)
+   ![cable placement](./help_images/cable.png)
 
-I recommend then using small rubber feet on the bottom of the chassis to prevent it from sliding around.
+5. **Final Assembly**: Snap the front of the case, screen, Pi, and cable onto the rear of the case. The fit should be snug depending on your print settings.
+
+6. **SD Card Insertion**: Insert the SD card into the cutout in the side of the case, ensuring it is inserted correctly.
+
+   ![sdcard](./help_images/sdcard.png)
+
+7. **Stabilization**: Optionally, add small rubber feet to the bottom of the case to prevent it from sliding around.
 
 ## Setup
-The preferred starting distro is <> image of Debian.  Once logged in via SSH, clone this repository using git.
 
+The recommended starting distro is a Debian image. Once logged in via SSH, clone this repository using git.
 
-## User-interface
+## User Interface
 
-Layouts and macros are created via a webserver listening on the Raspberry Pi.  The design uses a simplistic drag-and-drop interface for most features.
+Layouts and macros are created via a web server listening on the Raspberry Pi. The design uses a simplistic drag-and-drop interface for most features.
 
 ![example web layout](./help_images/web_layout.png)
 
 ### Layouts
 
-Layouts are the largest macro building block, and are comprised of a series of buttons of 3 difference sizes arrayed to user preference.  The layouts accomodate up to 25 of the smallest button sizes.  Layouts can be created by editing the "New Layout" at the top left of the page. Layouts can be swapped by clicking their names.  Layouts can be removed by dragging them to the trashcan at the bottom center of the page.
+Layouts are the largest macro building block, comprised of a series of buttons of 3 different sizes arranged to the user's preference. The layouts accommodate up to 25 of the smallest button sizes. Layouts can be created by editing the "New Layout" at the top left of the page. Layouts can be swapped by clicking their names and removed by dragging them to the trashcan at the bottom center of the page.
 
 ### Buttons
 
-Buttons are visible in the center of the page.  This center grid area displays what is visible on the LCD of the device.  The buttons arrayed in the grid can be dragged around to relocate them.  Additionally, they can be removed by dragging them to the trashcan.  New buttons can be added to the grid by dragging them from the "New Button" area in the bottom left of the web interface.
+Buttons are visible in the center grid area of the page, representing what is visible on the device's LCD. They can be dragged around to relocate or remove by dragging them to the trashcan. New buttons can be added to the grid by dragging them from the "New Button" area in the bottom left of the web interface.
 
 ### Macros
 
-Macros are on the right side of the web interface.  Like with layouts, they can be created via the "New Macro" at the top of the display.  Macros can be edited directly in the textarea found below the macro name.  New images can be added to the macro by simply dragging and dropping a .PNG file onto the old image.  Macros can be added to buttons by dragging them over the target button.  Finally, macros can be deleted by dragging them to the trashcan.
-
-## Hardware Required
-
-This macro box was designed a Raspberry Pi Zero 2 W and the Pimoroni HyperPixel 4.0 square touch screen (https://shop.pimoroni.com/products/hyperpixel-4-square?variant=30138251444307).  Also required is a USB cable and SD card.
-
-## Case Design
-
-Included is an STL file for printing the macro-box case.  The case can be printed without supports and snaps together.
-
-![alt text](./printable_case/case_screenshot.png)
-
-Files for the case can be found in the "printable_case" directory.
+Macros are on the right side of the web interface. They can be created via the "New Macro" at the top of the display. Macros can be edited directly in the textarea found below the macro name. New images can be added to the macro by dragging and dropping a .PNG file onto the old image. Macros can be added to buttons by dragging them over the target button and deleted by dragging them to the trashcan.
 
 ## Credits
 
-Example icons from: https://www.reddit.com/r/Helldivers/comments/1ayhofq/hell_divers_2_stratagems_icons_for_streamdeck/
-
-Touchscreen driver from: https://github.com/pimoroni/python-multitouch/blob/master/library/ft5406.py
+- Included icons from: [Helldivers 2 Stratagems Icons for Streamdeck](https://www.reddit.com/r/Helldivers/comments/1ayhofq/hell_divers_2_stratagems_icons_for_streamdeck/)
+- Touchscreen driver from: [Pimoroni Python Multitouch](https://github.com/pimoroni/python-multitouch/blob/master/library/ft5406.py)
