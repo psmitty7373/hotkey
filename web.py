@@ -28,14 +28,12 @@ class WebHandler(Thread):
         @self.app.route('/update', methods=['POST'])
         def update():
             try:
+                config = json.loads(request.form['config'])
+                validate(instance=config, schema=config_schema)
                 with open('config.json', 'w') as file:
-                    config = json.loads(request.form['config'])
-                    validate(instance=config, schema=config_schema)
-
                     fcntl.flock(file.fileno(), fcntl.LOCK_EX)                    
                     file.write(json.dumps(config))
                     fcntl.flock(file.fileno(), fcntl.LOCK_UN)
-
                 return 'Config updated successfully.'
 
             except Exception as e:

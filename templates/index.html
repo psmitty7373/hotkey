@@ -120,14 +120,6 @@
             pointer-events: none;
         }
 
-        .dragged-preview {
-            position: absolute;
-            pointer-events: none;
-            background-color: lightgray;
-            opacity: 0.7;
-            z-index: 1000;
-        }
-
         .size-9 {
             grid-column: span 6;
             grid-row: span 6;
@@ -156,9 +148,18 @@
             font-size: 25px;
         }
 
+        .draggable {
+            cursor: move;
+        }
+
         .hover {
             background-color: #777;
             box-shadow: 0 0 0 3px #63acff;
+        }
+
+        .hover-danger {
+            background-color: #ff1e1e;
+            box-shadow: 0 0 0 3px #ee821d;
         }
 
         textarea {
@@ -226,10 +227,6 @@
             display: flex;
         }
 
-        .draggable {
-            cursor: move;
-        }
-
         .macro-info {
             flex: 1;
             padding-right: 10px;
@@ -264,11 +261,6 @@
             border-radius: 5px;
             padding: 5px;
         }
-
-        .hover-danger {
-            background-color: #ff1e1e;
-            box-shadow: 0 0 0 3px #ee821d;
-        }
    </style>
 </head>
 <body>
@@ -288,7 +280,6 @@
     </div>
     <div class="trashcan" id="trashcan"><img src="default_images/trashcan.png" width=50 style="pointer-events: none;"></div>
     <div class="sidebar" id="macrobar"></div>
-    <div class="dragged-preview" style="display: none;"></div>
     <script>
         const GRID_SIZE = 10;
         const MAX_GRID_CAPACITY = 25;
@@ -620,6 +611,7 @@
                 <button class="button" type="button" onclick="newMacro()">Save</button>
             `;
             macrobar.appendChild(div);
+            document.getElementById('new-macro-name').addEventListener('keydown', newNameFilter);
 
             const sorted_macros = Object.keys(macros).sort();
             for (const macro of sorted_macros) {
@@ -628,8 +620,8 @@
                 div.className = 'macro draggable';
                 div.draggable = true;
                 div.innerHTML = `
-                    <div class="macro-info">
-                        <div class="macro-name" name="macro-name"><i class="fas fa-grip-vertical"></i>${macro}</div>
+                    <div class="macro-info" ondblclick="renameMacro(event)">
+                        <div class="macro-name" name="macro-name"><i class="fas fa-grip-vertical"></i><span>${macro}</span></div>
                         <textarea class="macro-action" name="macro-action" rows="2" cols="25" oninput="handleMacroChange()" data-macro-name="${macro}">${value.action}</textarea>
                     </div>
                     <img class="macro-image" src="images/${value.image}" alt="${macro}" data-macro-name="${macro}">
@@ -693,6 +685,88 @@
             }
         }
 
+        function newNameFilter(e) {
+            var regex = /^[a-zA-Z0-9_]{0,31}$/;
+            var currentText = e.target.innerText;
+            var potentialText = currentText + e.key;
+
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                e.target.blur();
+            } else if (e.key === 'Backspace' || e.key === 'Delete') {
+
+            } else if (!regex.test(potentialText)) {
+                e.preventDefault();
+            }
+        }
+
+        function renameMacro(event) {
+            let target = event.target;
+            if (target.tagName === 'SPAN') {
+                target = event.target.parentElement;
+            }
+            if (target.tagName === 'SPAN' || target.classList.contains('macro-name') || target.classList.contains('layout-name')) {
+                const span = target.tagName === 'SPAN' ? target : target.querySelector('span');
+                span.contentEditable = true;
+                span.focus();
+                const old_name = span.innerHTML;
+
+                document.execCommand('selectAll', false, null);
+                span.addEventListener('keydown', newNameFilter);
+
+                span.addEventListener('blur', function() {
+                    const new_name = this.innerText;
+
+                    if (new_name != old_name) {
+                        let grid_dirty = false;
+                        let changed = false;
+                        
+                        if (target.classList.contains('macro-name')) {
+                            if (Object.keys(config.macros).includes(new_name)) {
+                                alert('Error, macro of the same name already exists.');
+                                this.innerHTML = old_name;
+                            } else {
+                                delete Object.assign(config.macros, {[new_name]: config.macros[old_name] })[old_name];
+                                changed = true;
+                                for (const [layout_name, layout] of Object.entries(config.layouts)) {
+                                    for (let i = 0; i < layout.buttons.length; i++) {
+                                        if (layout.buttons[i].macro === old_name) {
+                                            grid_dirty = true;
+                                            layout.buttons[i].macro = new_name;
+                                        }
+                                    }
+                                }
+
+                            }
+                        } else if (target.classList.contains('layout-name')) {
+                            if (Object.keys(config.layouts).includes(new_name)) {
+                                alert('Error, layout of the same name already exists.');
+                                this.innerHTML = old_name;
+                            } else {
+                                delete Object.assign(config.layouts, {[new_name]: config.layouts[old_name] })[old_name];
+                                changed = true;
+                                if (config.current_layout === old_name) {
+                                    config.current_layout = new_name;
+                                }
+                            }
+                        }
+
+                        if (changed) {
+                            saveConfig();
+                            loadMacros();
+                            loadLayouts();
+                        }
+                        if (grid_dirty) {
+                            loadGrid();
+                        }
+                    }
+
+                    this.contentEditable = false;
+                    this.removeEventListener('keydown', newNameFilter);
+                }, { once: true });
+            }
+        }
+
         function loadLayouts() {
             const layouts = config.layouts;
             const layoutbar = document.getElementById('layoutbar');
@@ -704,14 +778,18 @@
             div.innerHTML = `<div id="new-layout-name" class="layout-name" name="layout-name" onfocus="clearDefaultText(this)" onblur="restoreDefaultText(this)" data-default-text="New Layout" contentEditable="true" style="cursor: text">New Layout</div>
                 <button class="button" type="button" onclick="newLayout()">Save</button>`;
             layoutbar.appendChild(div);
-            for (const [key, value] of Object.entries(layouts)) {
+            document.getElementById('new-layout-name').addEventListener('keydown', newNameFilter);
+
+            const sorted_layouts = Object.keys(layouts).sort();
+            for (const layout of sorted_layouts) {
+                const value = layouts[layout];
                 const div = document.createElement('div');
                 div.className = 'layout draggable';
                 div.draggable = true;
                 div.innerHTML = `
-                    <div class="layout-name" name="layout-name" data-layout-name="${key}" onclick="changeLayout('${key}')">${key}</div>
+                    <div class="layout-name" name="layout-name" data-layout-name="${layout}" onclick="changeLayout('${layout}')" ondblclick="renameMacro(event)"><span>${layout}</span></div>
                 `;
-                div.setAttribute('data-layout-name', key);
+                div.setAttribute('data-layout-name', layout);
                 layoutbar.appendChild(div);
             }
         }
