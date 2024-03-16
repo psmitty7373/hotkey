@@ -6,7 +6,7 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 apt update
-apt install gunicorn python3-pip python3-pygame python3-flask python3-gunicorn python3-watchdog python3-jsonschema
+apt install -y gunicorn python3-pip python3-pygame python3-flask python3-gunicorn python3-watchdog python3-jsonschema
 
 if ! $(grep -q dtoverlay=vc4-kms-dpi-hyperpixel4sq /boot/config.txt) ; then
     echo "dtoverlay=vc4-kms-dpi-hyperpixel4sq" >> /boot/config.txt
@@ -24,7 +24,6 @@ if ! id "hotkey" &>/dev/null; then
     usermod -a -G tty hotkey
 fi
 
-mkdir /opt/hotkey
 cp -r * /opt/hotkey/
 chown -R hotkey:hotkey /opt/hotkey
 chown -R root:root /opt/hotkey/hid.sh
@@ -45,4 +44,4 @@ systemctl enable hid.service
 systemctl enable gunicorn.service
 systemctl enable hotkey.service
 
-#reboot
+reboot
